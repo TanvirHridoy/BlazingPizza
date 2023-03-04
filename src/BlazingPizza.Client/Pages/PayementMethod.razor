@@ -1,0 +1,185 @@
+﻿@page "/payementMethod"
+@attribute [Authorize]
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUserAuthService auth
+@using System.ComponentModel.DataAnnotations
+
+
+<PageTitle>Blazing Pizza - Payment Methods</PageTitle>
+@if (IsAdmin == true)
+{
+    <div class="main">
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="6">
+                <MudPaper Class="pa-4">
+                    <MudForm @ref="form">
+                        <MudTextField @bind-Value="PaymentMethodName" Label="Payment Method Name" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"
+                                  Required="true" RequiredError="Payment Method Name is required!"></MudTextField>
+                    </MudForm>
+
+                </MudPaper>
+                <MudPaper Class="pa-4 mt-2 " Style="text-align:right;">
+
+                    <MudButton Class="" Disabled="@_processing" OnClick="ProcessSomething" Variant="MudBlazor.Variant.Filled" Color="Color.Primary">
+                        @if (_processing)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Saving</MudText>
+                        }
+                        else
+                        {
+                            <MudText>@BtnName</MudText>
+                        }
+                    </MudButton>
+                </MudPaper>
+
+
+            </MudItem>
+            <MudItem xs="12" sm="6" md="6">
+                <MudTable Items="@pMethods" Dense="true" Hover="true" Bordered="true" Striped="true" Filter="new Func<PaymentMethod,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Payment Methods</MudText>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Sl#</MudTh>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Action</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Sl#">@(pMethods.IndexOf(context) + 1)</MudTd>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Action">
+
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="()=>Edit(context.Id)" aria-label="delete"></MudIconButton>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="()=>ConfirmDelete(context.Id)" aria-label="delete"></MudIconButton>
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager />
+                        </PagerContent>
+                    </MudTable>
+                </MudItem>
+            </MudGrid>
+        </div>
+}
+
+
+
+    @code {
+    [Inject] private IDialogService DialogService { get; set; }
+    public string PaymentMethodName { get; set; }
+    public int PaymentMethodId { get; set; } = 0;
+    private string searchString1 = "";
+    private HashSet<PaymentMethod> selectedItems = new HashSet<PaymentMethod>();
+    private PaymentMethod selectedItem1 = null;
+    private List<PaymentMethod> pMethods = new List<PaymentMethod>();
+    private int sl = 0;
+    public string BtnName = "Save";
+    MudForm form;
+    public bool IsAdmin { get; set; } = false;
+    protected override async Task OnInitializedAsync()
+    {
+        IsAdmin = await auth.IsAdminAsync();
+        if (IsAdmin)
+        {
+            await LoadDataAsync();
+
+        }
+    }
+
+
+    protected async Task LoadDataAsync()
+    {
+        PaymentMethodId = 0;
+        PaymentMethodName = "";
+        pMethods = await HttpClient.GetFromJsonAsync<List<PaymentMethod>>("/payment");
+    }
+    private bool FilterFunc1(PaymentMethod element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(PaymentMethod element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private bool _processing = false;
+
+    protected async Task ProcessSomething()
+    {
+        _processing = true;
+        await SaveAsync();
+        _processing = false;
+    }
+
+
+    protected async Task ConfirmDelete(int id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Warning",
+            "Deleting can not be undone!",
+            yesText: "Delete!", cancelText: "Cancel");
+        if (result == true)
+        {
+            await Delete(id);
+        }
+
+    }
+    protected async Task Delete(int id)
+    {
+        var result = await HttpClient.DeleteFromJsonAsync<bool>($"/payment/{id}");
+
+        if (result)
+        {
+            Snackbar.Add("Sucessfully Removed", Severity.Success, config => { config.HideIcon = true; });
+        }
+        else
+        {
+
+            Snackbar.Add("Failed To Remove", Severity.Error, config => { config.HideIcon = true; });
+        }
+        await LoadDataAsync();
+        await Task.CompletedTask;
+    }
+
+    protected async Task Edit(int id)
+    {
+        BtnName = "Update";
+        var method = await HttpClient.GetFromJsonAsync<PaymentMethod>($"/payment/{id}");
+        PaymentMethodName = method.Name;
+        PaymentMethodId = method.Id;
+        await Task.CompletedTask;
+    }
+
+    protected async Task SaveAsync()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+            PaymentMethod payment = new PaymentMethod()
+                {
+                    Id = PaymentMethodId,
+                    Name = PaymentMethodName
+                };
+            var result = await HttpClient.PostAsJsonAsync<PaymentMethod>($"/payment", payment);
+            if (result.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Sucessfully Saved", Severity.Success, config => { config.HideIcon = true; });
+            }
+            else
+            {
+                Snackbar.Add("Failed To Save", Severity.Error, config => { config.HideIcon = true; });
+            }
+            await LoadDataAsync();
+        }
+
+
+    }
+}

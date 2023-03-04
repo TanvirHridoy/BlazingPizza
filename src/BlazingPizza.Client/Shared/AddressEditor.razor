@@ -1,0 +1,51 @@
+﻿<div class="form-field">
+    <label>Name:</label>
+    <div>
+         <MudTextField @bind-Value="Address.Name" Label="Name" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+
+        <ValidationMessage For="@(() => Address.Name)" />
+    </div>
+</div>
+
+<div class="form-field">
+    <label>Line 1:</label>
+    <div>
+        <MudTextField @bind-Value="Address.Line1" Label="Line 1" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+    </div>
+</div>
+
+<div class="form-field">
+    <label>Line 2:</label>
+    <div>
+        <MudTextField @bind-Value="Address.Line2" Label="Line 2" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+        
+    </div>
+</div>
+
+<div class="form-field">
+    <label>City:</label>
+    <div>
+        <MudTextField @bind-Value="Address.City" Label="City" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+       
+    </div>
+</div>
+
+<div class="form-field">
+    <label>Region:</label>
+    <div>
+        <MudTextField @bind-Value="Address.Region" Label="Region" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+        
+    </div>
+</div>
+
+<div class="form-field">
+    <label>Postal code:</label>
+    <div >
+        <MudTextField @bind-Value="Address.PostalCode" Label="Postal Code" Variant="MudBlazor.Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+        
+    </div>
+</div>
+
+@code {
+    [Parameter] public Address Address { get; set; }
+}

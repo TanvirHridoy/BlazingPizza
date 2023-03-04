@@ -1,0 +1,56 @@
+﻿@inherits LayoutComponentBase
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject HttpClient HttpClient
+@inject IUserAuthService auth
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<div class="top-bar">
+    <a class="logo" href="">
+        <img src="img/logo.svg" />
+    </a>
+
+    <NavLink href="" class="nav-tab" Match="NavLinkMatch.All">
+        <img src="img/pizza-slice.svg" />
+        <div>Get Pizza</div>
+    </NavLink>
+   
+    <AuthorizeView >
+        <NavLink href="myorders" class="nav-tab">
+            <img src="img/bike.svg" />
+            <div>My Orders </div>
+        </NavLink>
+    </AuthorizeView>
+    @if (Roles.Contains("Admin"))
+    {
+            <NavLink href="payementMethod" class="nav-tab">
+                <img src="img/pay.svg" />
+                <div>Payement Method </div>
+            </NavLink>
+            <NavLink href="userManager" class="nav-tab">
+            <img src="img/userManage.svg" />
+                <div>Manange User </div>
+            </NavLink>
+    }
+    <LoginDisplay />
+</div>
+
+<div class="content">
+    @Body
+</div>
+@code{
+    public List<string> Roles { get; set; } = new List<string>(); 
+    public bool IsAdmin { get; set; } = false;
+    protected override async Task OnInitializedAsync()
+    {
+
+        //IsAdmin = await auth.IsAdminAsync();
+        var autostate=await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = autostate!=null?autostate.User:null;
+        if (user != null && String.IsNullOrEmpty(user.Identity.Name)==false)
+        {
+            Roles = await HttpClient.GetFromJsonAsync<List<string>>($"/roles/{user.Identity.Name}");
+        }
+        
+    }
+}
